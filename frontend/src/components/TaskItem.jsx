@@ -45,9 +45,40 @@ function TaskItem({ task, onComplete, onDelete, onUpdate }) {
             autoFocus
           />
         ) : (
-          <span className={task.completed ? "completed" : ""}>
-            {task.title}
-          </span>
+          <div>
+  <span className={task.completed ? "completed" : ""}>
+    {task.title}
+  </span>
+  {task.description && (
+  <p className="task-description">
+    {task.description}
+  </p>
+)}
+
+  <span className={`priority priority-${task.priority}`}>
+    {task.priority}
+  </span>
+
+  {task.due_date && (
+  <span className="due-date">
+    Due: {task.due_date}
+  </span>
+)}
+
+{task.due_date &&
+  !task.completed &&
+  new Date(task.due_date) < new Date(new Date().toDateString()) && (
+    <span className="overdue-badge">
+      OVERDUE
+    </span>
+  )}
+
+  {task.category && (
+  <span className="category">
+    {task.category}
+  </span>
+)}
+</div>
         )}
       </div>
 

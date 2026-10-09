@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const taskRoutes = require("./routes/tasks");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.get("/health", (req, res) => {
 
 // Task routes
 app.use("/tasks", taskRoutes);
+app.use("/auth", authRoutes);
 
 const PORT = process.env.PORT || 3000;
 

@@ -2,58 +2,156 @@ const express = require("express");
 const router = express.Router();
 
 const pool = require("../db");
+const authMiddleware = require("../middleware/authMiddleware");
 
-// GET all tasks
-router.get("/", async (req, res) => {
+const VALID_PRIORITIES = ["low", "medium", "high"];
+const VALID_CATEGORIES = ["Personal", "College", "Work", "Project"];
+
+const isValidDate = (date) => {
+  if (date === null || date === undefined || date === "") {
+    return true;
+  }
+
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return false;
+  }
+
+  const parsed = new Date(`${date}T00:00:00Z`);
+
+  return (
+    !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === date
+  );
+};
+
+const isValidTaskId = (id) => /^\d+$/.test(id) && Number(id) > 0;
+
+// GET all tasks belonging to the logged-in user
+router.get("/", authMiddleware, async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM tasks");
+    const result = await pool.query(
+      "SELECT * FROM tasks WHERE user_id = $1 ORDER BY id DESC",
+      [req.user.id]
+    );
+
     res.json(result.rows);
   } catch (error) {
-    console.log(error);
-    res.status(500).send("Database error");
+    console.error("Get tasks error:", error);
+    res.status(500).json({ message: "Unable to load tasks." });
   }
 });
 
-// POST create a new task
-router.post("/", async (req, res) => {
+// POST create a task
+router.post("/", authMiddleware, async (req, res) => {
   try {
-    const { title } = req.body;
+    const {
+      title,
+      priority = "medium",
+      due_date,
+      description = "",
+      category = "Personal",
+    } = req.body;
 
-    // Validate title
-    if (!title || title.trim() === "") {
+    if (typeof title !== "string" || !title.trim()) {
       return res.status(400).json({
         message: "Task title is required.",
       });
     }
 
+    if (title.trim().length > 200) {
+      return res.status(400).json({
+        message: "Task title cannot exceed 200 characters.",
+      });
+    }
+
+    if (!VALID_PRIORITIES.includes(priority)) {
+      return res.status(400).json({
+        message: "Priority must be low, medium, or high.",
+      });
+    }
+
+    if (!VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({
+        message: "Please select a valid category.",
+      });
+    }
+
+    if (typeof description !== "string" || description.length > 5000) {
+      return res.status(400).json({
+        message: "Description must be text and cannot exceed 5000 characters.",
+      });
+    }
+
+    if (!isValidDate(due_date)) {
+      return res.status(400).json({
+        message: "Please provide a valid due date.",
+      });
+    }
+
     const result = await pool.query(
-      "INSERT INTO tasks (title) VALUES ($1) RETURNING *",
-      [title.trim()]
+      `INSERT INTO tasks
+        (title, user_id, priority, due_date, description, category)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [
+        title.trim(),
+        req.user.id,
+        priority,
+        due_date || null,
+        description,
+        category,
+      ]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.log(error);
-    res.status(500).send("Database error");
+    console.error("Create task error:", error);
+    res.status(500).json({ message: "Unable to create task." });
   }
 });
 
-// PUT update a task
-router.put("/:id", async (req, res) => {
+// PUT update task title, completion status, and priority
+router.put("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, completed } = req.body;
+    const { title, completed, priority } = req.body;
 
-    // Validate title
-    if (!title || title.trim() === "") {
+    if (!isValidTaskId(id)) {
+      return res.status(400).json({
+        message: "Invalid task ID.",
+      });
+    }
+
+    if (typeof title !== "string" || !title.trim()) {
       return res.status(400).json({
         message: "Task title is required.",
       });
     }
 
+    if (title.trim().length > 200) {
+      return res.status(400).json({
+        message: "Task title cannot exceed 200 characters.",
+      });
+    }
+
+    if (typeof completed !== "boolean") {
+      return res.status(400).json({
+        message: "Completed must be true or false.",
+      });
+    }
+
+    if (!VALID_PRIORITIES.includes(priority)) {
+      return res.status(400).json({
+        message: "Priority must be low, medium, or high.",
+      });
+    }
+
     const result = await pool.query(
-      "UPDATE tasks SET title = $1, completed = $2 WHERE id = $3 RETURNING *",
-      [title.trim(), completed, id]
+      `UPDATE tasks
+       SET title = $1, completed = $2, priority = $3
+       WHERE id = $4 AND user_id = $5
+       RETURNING *`,
+      [title.trim(), completed, priority, id, req.user.id]
     );
 
     if (result.rows.length === 0) {
@@ -64,19 +162,25 @@ router.put("/:id", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.log(error);
-    res.status(500).send("Database error");
+    console.error("Update task error:", error);
+    res.status(500).json({ message: "Unable to update task." });
   }
 });
 
-// DELETE a task
-router.delete("/:id", async (req, res) => {
+// DELETE a task belonging to the logged-in user
+router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (!isValidTaskId(id)) {
+      return res.status(400).json({
+        message: "Invalid task ID.",
+      });
+    }
+
     const result = await pool.query(
-      "DELETE FROM tasks WHERE id = $1 RETURNING *",
-      [id]
+      "DELETE FROM tasks WHERE id = $1 AND user_id = $2 RETURNING *",
+      [id, req.user.id]
     );
 
     if (result.rows.length === 0) {
@@ -87,8 +191,8 @@ router.delete("/:id", async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.log(error);
-    res.status(500).send("Database error");
+    console.error("Delete task error:", error);
+    res.status(500).json({ message: "Unable to delete task." });
   }
 });
 

@@ -1,4 +1,4 @@
-# TaskFlow - Full-Stack Task Manager
+# TaskYard - Full-Stack Task Manager
 
 A full-stack task management application built using React, Node.js, Express.js and PostgreSQL.
 
