@@ -14,7 +14,7 @@ function TaskForm({ onAddTask }) {
 
     if (isSubmitting) return;
 
-    if (title.trim() === "") {
+    if (!title.trim()) {
       setError("Please enter a task.");
       return;
     }
@@ -27,11 +27,10 @@ function TaskForm({ onAddTask }) {
         title.trim(),
         priority,
         dueDate,
-        description,
+        description.trim(),
         category
       );
 
-      // Clear the form only after a successful save.
       setTitle("");
       setPriority("medium");
       setDueDate("");
@@ -45,71 +44,99 @@ function TaskForm({ onAddTask }) {
   };
 
   return (
-    <div className="task-form-container">
+    <section className="task-form-container">
+      <div className="task-form-heading">
+        <div>
+          <p className="section-eyebrow">MAKE IT HAPPEN</p>
+          <h2>Create a task</h2>
+          <p>Add the next thing you want to get done.</p>
+        </div>
+
+        <span className="task-form-icon" aria-hidden="true">
+          +
+        </span>
+      </div>
+
       <form className="task-form" onSubmit={handleSubmit}>
-        {/* Task title */}
-        <input
-          type="text"
-          placeholder="Enter a task"
-          value={title}
-          onChange={(event) => {
-            setTitle(event.target.value);
-            setError("");
-          }}
-          disabled={isSubmitting}
-        />
+        <div className="task-form-main">
+          <div className="task-form-field title-field">
+            <label htmlFor="task-title">Task title</label>
+            <input
+              id="task-title"
+              type="text"
+              placeholder="What do you need to accomplish?"
+              value={title}
+              onChange={(event) => {
+                setTitle(event.target.value);
+                setError("");
+              }}
+              disabled={isSubmitting}
+              maxLength={200}
+            />
+          </div>
 
-        {/* Priority selection */}
-        <div className="form-field">
-          <label htmlFor="task-priority">Priority</label>
-          <select
-            id="task-priority"
-            value={priority}
-            onChange={(event) => setPriority(event.target.value)}
-            disabled={isSubmitting}
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
+          <div className="task-form-field description-field">
+            <label htmlFor="task-description">Description</label>
+            <textarea
+              id="task-description"
+              placeholder="Add some details (optional)"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              disabled={isSubmitting}
+              rows={3}
+            />
+          </div>
         </div>
 
-        {/* Due date */}
-        <input
-          type="date"
-          value={dueDate}
-          onChange={(event) => setDueDate(event.target.value)}
-          aria-label="Due date"
-          disabled={isSubmitting}
-        />
+        <div className="task-form-options">
+          <div className="task-form-field">
+            <label htmlFor="task-priority">Priority</label>
+            <select
+              id="task-priority"
+              value={priority}
+              onChange={(event) => setPriority(event.target.value)}
+              disabled={isSubmitting}
+            >
+              <option value="low">Low priority</option>
+              <option value="medium">Medium priority</option>
+              <option value="high">High priority</option>
+            </select>
+          </div>
 
-        {/* Task description */}
-        <textarea
-          placeholder="Enter task description"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          disabled={isSubmitting}
-        />
+          <div className="task-form-field">
+            <label htmlFor="task-category">Category</label>
+            <select
+              id="task-category"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              disabled={isSubmitting}
+            >
+              <option value="Personal">Personal</option>
+              <option value="College">College</option>
+              <option value="Work">Work</option>
+              <option value="Project">Project</option>
+            </select>
+          </div>
 
-        {/* Category selection */}
-        <div className="form-field">
-          <label htmlFor="task-category">Category</label>
-          <select
-            id="task-category"
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            disabled={isSubmitting}
-          >
-            <option value="Personal">Personal</option>
-            <option value="College">College</option>
-            <option value="Work">Work</option>
-            <option value="Project">Project</option>
-          </select>
+          <div className="task-form-field">
+            <label htmlFor="task-due-date">Due date</label>
+            <input
+              id="task-due-date"
+              type="date"
+              value={dueDate}
+              onChange={(event) => setDueDate(event.target.value)}
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
 
-        {/* Add task */}
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Adding Task..." : "Add Task"}
+        <button
+          className="task-submit-button"
+          type="submit"
+          disabled={isSubmitting}
+        >
+          <span aria-hidden="true">{isSubmitting ? "◌" : "+"}</span>
+          {isSubmitting ? "Adding task..." : "Add task"}
         </button>
       </form>
 
@@ -118,7 +145,7 @@ function TaskForm({ onAddTask }) {
           {error}
         </p>
       )}
-    </div>
+    </section>
   );
 }
 

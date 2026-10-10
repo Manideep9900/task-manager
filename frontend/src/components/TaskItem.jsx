@@ -5,9 +5,7 @@ function TaskItem({ task, onComplete, onDelete, onUpdate }) {
   const [title, setTitle] = useState(task.title);
 
   const handleUpdate = () => {
-    if (title.trim() === "") {
-      return;
-    }
+    if (!title.trim()) return;
 
     onUpdate(task.id, title.trim());
     setEditing(false);
@@ -18,15 +16,33 @@ function TaskItem({ task, onComplete, onDelete, onUpdate }) {
     setEditing(false);
   };
 
+  const dueDate = task.due_date
+    ? task.due_date.slice(0, 10)
+    : "";
+
+  const isOverdue =
+    dueDate &&
+    !task.completed &&
+    dueDate < new Date().toLocaleDateString("en-CA");
+
   return (
-    <div className="task-item">
-      <div className="task-left">
+    <article
+      className={`task-item task-card ${
+        task.completed ? "task-card-completed" : ""
+      }`}
+    >
+      <div className="task-card-check">
         <input
           type="checkbox"
-          checked={task.completed}
+          checked={Boolean(task.completed)}
           onChange={() => onComplete(task)}
+          aria-label={`Mark ${task.title} as ${
+            task.completed ? "incomplete" : "complete"
+          }`}
         />
+      </div>
 
+      <div className="task-card-content">
         {editing ? (
           <input
             className="edit-input"
@@ -34,79 +50,87 @@ function TaskItem({ task, onComplete, onDelete, onUpdate }) {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                handleUpdate();
-              }
-
-              if (event.key === "Escape") {
-                handleCancel();
-              }
+              if (event.key === "Enter") handleUpdate();
+              if (event.key === "Escape") handleCancel();
             }}
+            aria-label="Edit task title"
             autoFocus
           />
         ) : (
-          <div>
-  <span className={task.completed ? "completed" : ""}>
-    {task.title}
-  </span>
-  {task.description && (
-  <p className="task-description">
-    {task.description}
-  </p>
-)}
+          <>
+            <h3 className={task.completed ? "completed" : ""}>
+              {task.title}
+            </h3>
 
-  <span className={`priority priority-${task.priority}`}>
-    {task.priority}
-  </span>
-
-  {task.due_date && (
-  <span className="due-date">
-    Due: {task.due_date}
-  </span>
-)}
-
-{task.due_date &&
-  !task.completed &&
-  new Date(task.due_date) < new Date(new Date().toDateString()) && (
-    <span className="overdue-badge">
-      OVERDUE
-    </span>
-  )}
-
-  {task.category && (
-  <span className="category">
-    {task.category}
-  </span>
-)}
-</div>
+            {task.description && (
+              <p className="task-description">{task.description}</p>
+            )}
+          </>
         )}
+
+        <div className="task-card-meta">
+          <span
+            className={`priority priority-${(
+              task.priority || "medium"
+            ).toLowerCase()}`}
+          >
+            {task.priority || "Medium"}
+          </span>
+
+          {task.category && (
+            <span className="category">{task.category}</span>
+          )}
+
+          {dueDate && (
+            <span className={`due-date ${isOverdue ? "due-date-overdue" : ""}`}>
+              {isOverdue ? "Overdue · " : "Due · "}
+              {dueDate}
+            </span>
+          )}
+
+          {task.completed && (
+            <span className="task-completed-badge">✓ Completed</span>
+          )}
+        </div>
       </div>
 
       <div className="task-actions">
         {editing ? (
           <>
-            <button onClick={handleUpdate}>
+            <button
+              type="button"
+              className="task-action-save"
+              onClick={handleUpdate}
+            >
               Save
             </button>
 
-            <button onClick={handleCancel}>
+            <button type="button" onClick={handleCancel}>
               Cancel
             </button>
           </>
         ) : (
-          <button onClick={() => setEditing(true)}>
+          <button
+            type="button"
+            className="task-action-edit"
+            onClick={() => {
+              setTitle(task.title);
+              setEditing(true);
+            }}
+          >
             Edit
           </button>
         )}
 
         <button
+          type="button"
           className="delete-button"
           onClick={() => onDelete(task.id)}
         >
           Delete
         </button>
       </div>
-    </div>
+    </article>
   );
 }
 

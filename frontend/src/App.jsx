@@ -304,335 +304,81 @@ const upcomingTasks = tasks.filter((task) => {
     return <Auth onLogin={setUser} />;
   }
 
-  return (
-    <div className="app">
-      <div className="background-shape shape-one"></div>
-      <div className="background-shape shape-two"></div>
+  const completionPercent = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+  const overdueTasks = tasks.filter((task) => {
+    if (!task.due_date || task.completed) return false;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const due = new Date(task.due_date); due.setHours(0, 0, 0, 0);
+    return due < today;
+  }).length;
 
-      <main className="container">
-        {successMessage && (
-  <div className="success-notification" role="status">
-    {successMessage}
-  </div>
-)}
-        <header className="header">
-          <div>
-            <p className="eyebrow">YOUR DAILY ORGANIZER</p>
-            <h1>TaskYard</h1>
-            <p className="subtitle">
-              Organize your work. Get things done.
-            </p>
-            <p className="welcome-user">
-  Welcome, {user.name}
-</p>
-          </div>
-
-          <div className="task-count">
-            <strong>{totalTasks}</strong>
-            <span>Tasks</span>
-          </div>
-          <button className="logout-button" onClick={logout}>
-  Logout
-</button>
-        </header>
-
-        <TaskForm onAddTask={addTask} />
-
-        <section className="task-summary">
-          <div className="summary-card total-card">
-            <span className="summary-label">Total</span>
-            <strong>{totalTasks}</strong>
-          </div>
-
-          <div className="summary-card active-card">
-            <span className="summary-label">Active</span>
-            <strong>{activeTasks}</strong>
-          </div>
-
-          <div className="summary-card completed-card">
-            <span className="summary-label">Completed</span>
-            <strong>{completedTasks}</strong>
-          </div>
-          <div className="summary-card high-card">
-  <span className="summary-label">High Priority</span>
-  <strong>{highPriorityTasks}</strong>
-</div>
-<div className="summary-card upcoming-card">
-  <span className="summary-label">Upcoming (3 Days)</span>
-  <strong>{upcomingTasks}</strong>
-</div>
-        </section>
-        <section className="progress-section">
-  <div className="progress-header">
-    <h3>Your Progress</h3>
-    <strong>
-      {totalTasks === 0
-        ? 0
-        : Math.round((completedTasks / totalTasks) * 100)}%
-    </strong>
-  </div>
-
-  <div className="progress-track">
-    <div
-      className="progress-fill"
-      style={{
-        width: `${
-          totalTasks === 0
-            ? 0
-            : (completedTasks / totalTasks) * 100
-        }%`,
-      }}
-    />
-  </div>
-
-  <p>
-    {completedTasks} of {totalTasks} tasks completed
-  </p>
-</section>
-<section className="upcoming-section">
-  <div className="upcoming-header">
-    <div>
-      <h2>Upcoming Tasks</h2>
-      <p>Stay ahead of your deadlines.</p>
-    </div>
-
-    <button
-      className="view-all-button"
-      onClick={() => {
-        setFilter("all");
-        setCategoryFilter("all");
-        setSearch("");
-        setShowOverdueOnly(false);
-        setShowUpcomingOnly(true);
-        scrollToTasks();
-      }}
-    >
-      View All
-    </button>
-    <button
-  className="view-all-button"
-  onClick={() => {
-    setFilter("all");
+  const jumpToTasks = (mode = "all") => {
+    setFilter(mode === "completed" ? "completed" : mode === "active" ? "active" : "all");
+    setShowUpcomingOnly(mode === "upcoming");
+    setShowOverdueOnly(mode === "overdue");
     setCategoryFilter("all");
     setSearch("");
-    setShowUpcomingOnly(false);
-    setShowOverdueOnly(true);
     scrollToTasks();
-  }}
->
-  View Overdue
-</button>
-    {(showUpcomingOnly || showOverdueOnly) && (
-  <button
-    className="view-all-button"
-    onClick={() => {
-  setShowUpcomingOnly(false);
-  setShowOverdueOnly(false);
-      scrollToTasks();
-}}
-  >
-    Show All Tasks
-  </button>
-)}
-  </div>
+  };
 
-  <div className="upcoming-list">
-    {tasks
-      .filter((task) => {
-        if (!task.due_date || task.completed) {
-          return false;
-        }
+  return (
+    <div className="app ty-dashboard">
+      <aside className="ty-sidebar">
+        <a className="ty-brand" href="#dashboard" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}>
+          <span className="ty-brand-mark">✓</span>
+          <span>Task<span>Yard</span><small>YOUR DAILY WORKSPACE</small></span>
+        </a>
+        <p className="ty-nav-label">WORKSPACE</p>
+        <nav className="ty-nav" aria-label="Main navigation">
+          <button className="ty-nav-item active" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}><span>⌂</span> Dashboard</button>
+          <button className="ty-nav-item" onClick={() => jumpToTasks("all")}><span>▤</span> My tasks <b>{activeTasks}</b></button>
+          <button className="ty-nav-item" onClick={() => jumpToTasks("upcoming")}><span>◷</span> Upcoming <b>{upcomingTasks}</b></button>
+          <button className="ty-nav-item" onClick={() => jumpToTasks("completed")}><span>✓</span> Completed</button>
+          <button className="ty-nav-item" onClick={() => jumpToTasks("overdue")}><span>⚑</span> Overdue <b className="ty-nav-danger">{overdueTasks}</b></button>
+        </nav>
+        <div className="ty-sidebar-bottom">
+          <div className="ty-sidebar-tip"><span>✦</span><strong>Small steps add up.</strong><p>Keep moving forward, one task at a time.</p></div>
+          <button className="ty-profile" onClick={logout} title="Log out"><span className="ty-avatar">{(user.name || user.email || "U").charAt(0).toUpperCase()}</span><span className="ty-profile-text"><strong>{user.name || "Your account"}</strong><small>Signed in · Log out</small></span><span className="ty-logout-icon">↗</span></button>
+        </div>
+      </aside>
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+      <main className="ty-main" id="dashboard">
+        {successMessage && <div className="success-notification" role="status">✓ &nbsp;{successMessage}</div>}
+        <header className="ty-topbar">
+          <div><p className="ty-eyebrow">YOUR PERSONAL WORKSPACE</p><h1>Good to see you, {user.name?.split(" ")[0] || "there"} <span>✦</span></h1><p className="ty-subtitle">Here's what's happening with your tasks today.</p></div>
+          <div className="ty-topbar-actions"><span className="ty-date">◷ &nbsp;{new Date().toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</span><button className="ty-logout-button" onClick={logout}>Log out ↗</button></div>
+        </header>
 
-        const dueDate = new Date(task.due_date);
-        dueDate.setHours(0, 0, 0, 0);
+        {error && <p className="error-message ty-error">{error}</p>}
+        {loading && <p className="status-message">Loading your tasks…</p>}
 
-        const daysUntilDue =
-          (dueDate - today) / (1000 * 60 * 60 * 24);
+        <section className="ty-stat-grid" aria-label="Task summary">
+          <article className="ty-stat-card"><span className="ty-stat-icon ty-icon-purple">▤</span><span className="ty-stat-label">Total tasks</span><strong>{totalTasks}</strong><small>Across all categories</small></article>
+          <article className="ty-stat-card"><span className="ty-stat-icon ty-icon-blue">◷</span><span className="ty-stat-label">In progress</span><strong>{activeTasks}</strong><small>Tasks to keep moving</small></article>
+          <article className="ty-stat-card"><span className="ty-stat-icon ty-icon-green">✓</span><span className="ty-stat-label">Completed</span><strong>{completedTasks}</strong><small>Nice work so far</small></article>
+          <article className="ty-stat-card"><span className="ty-stat-icon ty-icon-orange">⚑</span><span className="ty-stat-label">Overdue</span><strong>{overdueTasks}</strong><small>Need your attention</small></article>
+        </section>
 
-        return daysUntilDue >= 0 && daysUntilDue <= 3;
-      })
-      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
-      .slice(0, 3)
-      .map((task) => (
-        <div className="upcoming-task" key={task.id}>
-          <div className="upcoming-task-info">
-            <strong>{task.title}</strong>
+        <section className="ty-overview-grid">
+          <article className="ty-panel ty-progress-panel">
+            <div className="ty-panel-heading"><div><p className="ty-eyebrow">YOUR MOMENTUM</p><h2>Task completion</h2></div><span className="ty-pill">All time</span></div>
+            <div className="ty-progress-content"><div className="ty-ring" style={{ "--progress": `${completionPercent}%` }}><div className="ty-ring-inner"><strong>{completionPercent}%</strong><span>completed</span></div></div><div className="ty-progress-copy"><h3>{completionPercent === 100 && totalTasks ? "Everything done!" : completionPercent >= 60 ? "You're doing great!" : "Every task counts."}</h3><p>{completedTasks} of {totalTasks} tasks completed. Keep your momentum going.</p><div className="ty-legend"><span><i className="ty-dot ty-dot-green" /> Completed <b>{completedTasks}</b></span><span><i className="ty-dot ty-dot-purple" /> In progress <b>{activeTasks}</b></span></div><button className="ty-text-button" onClick={() => jumpToTasks("all")}>View all tasks <span>→</span></button></div></div>
+          </article>
+          <article className="ty-panel ty-deadline-panel"><div className="ty-panel-heading"><div><p className="ty-eyebrow">STAY ON TRACK</p><h2>Coming up next</h2></div><span className="ty-stat-icon ty-icon-blue">◷</span></div><p className="ty-panel-description">Your open tasks due within the next 3 days.</p><div className="ty-deadline-number">{upcomingTasks}<span> upcoming {upcomingTasks === 1 ? "task" : "tasks"}</span></div><div className="ty-mini-track"><span style={{ width: `${totalTasks ? Math.min(100, upcomingTasks / totalTasks * 100) : 0}%` }} /></div><button className="ty-secondary-button" onClick={() => jumpToTasks("upcoming")}>Review upcoming tasks <span>→</span></button><div className="ty-deadline-footer"><span className="ty-dot ty-dot-orange" /> {overdueTasks ? `${overdueTasks} overdue — review when you can` : "You're all caught up on overdue tasks"}</div></article>
+        </section>
 
-            <span>
-              Due: {task.due_date}
-            </span>
+        <section className="ty-panel ty-create-panel" id="create-task"><div className="ty-panel-heading"><div><p className="ty-eyebrow">MAKE IT HAPPEN</p><h2>Create a task</h2><p className="ty-panel-description">Add the next thing you want to get done.</p></div><span className="ty-create-mark">＋</span></div><div className="ty-task-form-wrap"><TaskForm onAddTask={addTask} /></div></section>
+
+        <section className="ty-panel ty-tasks-panel" id="tasks-section" ref={tasksSectionRef}>
+          <div className="ty-panel-heading ty-tasks-heading"><div><p className="ty-eyebrow">YOUR WORK, ORGANIZED</p><h2>My tasks <span className="ty-count-pill">{sortedTasks.length}</span></h2></div><button className="ty-secondary-button" onClick={() => { setFilter("all"); setCategoryFilter("all"); setSearch(""); setShowUpcomingOnly(false); setShowOverdueOnly(false); setSortBy("newest"); }}>Reset filters ↺</button></div>
+          <div className="ty-controls">
+            <label className="ty-search"><span>⌕</span><input type="text" placeholder="Search tasks by title…" value={search} onChange={(event) => setSearch(event.target.value)} /><kbd>⌕</kbd></label>
+            <div className="ty-filter-row"><div className="ty-filter-block"><span className="ty-filter-label">STATUS</span><div className="ty-filter-buttons"><button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")}>All tasks</button><button className={filter === "active" ? "selected" : ""} onClick={() => setFilter("active")}>Active</button><button className={filter === "completed" ? "selected" : ""} onClick={() => setFilter("completed")}>Completed</button></div></div><div className="ty-filter-block"><label className="ty-filter-label" htmlFor="ty-category">CATEGORY</label><select id="ty-category" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}><option value="all">All categories</option><option value="Personal">Personal</option><option value="College">College</option><option value="Work">Work</option><option value="Project">Project</option></select></div><div className="ty-filter-block ty-sort-block"><label className="ty-filter-label" htmlFor="sortTasks">SORT BY</label><select id="sortTasks" value={sortBy} onChange={(event) => setSortBy(event.target.value)}><option value="newest">Newest first</option><option value="priority">Priority: high to low</option><option value="dueDate">Due date: earliest</option></select></div></div>
+            {(showUpcomingOnly || showOverdueOnly) && <div className="ty-active-filter-note">Showing {showUpcomingOnly ? "upcoming tasks due within 3 days" : "overdue tasks"}. <button onClick={() => { setShowUpcomingOnly(false); setShowOverdueOnly(false); }}>Clear filter</button></div>}
           </div>
-
-          <span className={`priority priority-${task.priority}`}>
-            {task.priority}
-          </span>
-        </div>
-      ))}
-
-    {!tasks.some((task) => {
-      if (!task.due_date || task.completed) {
-        return false;
-      }
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const dueDate = new Date(task.due_date);
-      dueDate.setHours(0, 0, 0, 0);
-
-      const daysUntilDue =
-        (dueDate - today) / (1000 * 60 * 60 * 24);
-
-      return daysUntilDue >= 0 && daysUntilDue <= 3;
-    }) && (
-      <p className="no-upcoming-tasks">
-        No upcoming tasks. You're all caught up!
-      </p>
-    )}
-  </div>
-</section>
-
-        <section className="controls">
-  {/* Search row */}
-  <div className="search-box">
-    <input
-      type="text"
-      placeholder="Search tasks by title..."
-      value={search}
-      onChange={(event) => setSearch(event.target.value)}
-    />
-  </div>
-
-  {/* Status filters */}
-  <div className="filter-group">
-    <p className="filter-heading">STATUS</p>
-
-    <div className="filters">
-      <button
-        className={filter === "all" ? "active-filter" : ""}
-        onClick={() => setFilter("all")}
-      >
-        All Tasks
-      </button>
-
-      <button
-        className={filter === "active" ? "active-filter" : ""}
-        onClick={() => setFilter("active")}
-      >
-        Active
-      </button>
-
-      <button
-        className={filter === "completed" ? "active-filter" : ""}
-        onClick={() => setFilter("completed")}
-      >
-        Completed
-      </button>
-    </div>
-  </div>
-
-  {/* Category filters */}
-  <div className="filter-group">
-    <p className="filter-heading">CATEGORY</p>
-
-    <div className="filters">
-      <button
-        className={categoryFilter === "all" ? "active-filter" : ""}
-        onClick={() => setCategoryFilter("all")}
-      >
-        All Categories
-      </button>
-
-      <button
-        className={categoryFilter === "Personal" ? "active-filter" : ""}
-        onClick={() => setCategoryFilter("Personal")}
-      >
-        Personal
-      </button>
-
-      <button
-        className={categoryFilter === "College" ? "active-filter" : ""}
-        onClick={() => setCategoryFilter("College")}
-      >
-        College
-      </button>
-
-      <button
-        className={categoryFilter === "Work" ? "active-filter" : ""}
-        onClick={() => setCategoryFilter("Work")}
-      >
-        Work
-      </button>
-
-      <button
-        className={categoryFilter === "Project" ? "active-filter" : ""}
-        onClick={() => setCategoryFilter("Project")}
-      >
-        Project
-      </button>
-    </div>
-  </div>
-</section>
-
-<div className="sort-controls">
-  <label htmlFor="sortTasks">Sort tasks:</label>
-
-  <select
-    id="sortTasks"
-    value={sortBy}
-    onChange={(event) => setSortBy(event.target.value)}
-  >
-    <option value="newest">Newest First</option>
-    <option value="priority">Priority: High to Low</option>
-    <option value="dueDate">Due Date: Earliest First</option>
-  </select>
-</div>
-
-        {loading && (
-          <p className="status-message">
-            Loading tasks...
-          </p>
-        )}
-
-        {error && (
-          <p className="error-message">
-            {error}
-          </p>
-        )}
-      
-
-        <div ref={tasksSectionRef} id="tasks-section">
-          {!loading && !error && (
-  sortedTasks.length === 0 ? (
-    <div className="empty-state">
-      {tasks.length === 0 ? (
-        <>
-          <h3>No tasks yet</h3>
-          <p>Add your first task to get started!</p>
-        </>
-      ) : (
-        <>
-          <h3>No tasks found</h3>
-          <p>
-            No tasks match your current search or filters.
-            Try changing them.
-          </p>
-        </>
-      )}
-    </div>
-  ) : (
-    <TaskList
-      tasks={sortedTasks}
-      onComplete={completeTask}
-      onDelete={deleteTask}
-      onUpdate={updateTask}
-    />
-  )
-)}
-        </div>
+          {loading ? <div className="ty-empty-state"><span>◷</span><h3>Loading tasks</h3><p>Your workspace is getting ready.</p></div> : sortedTasks.length === 0 ? <div className="ty-empty-state"><span>{tasks.length ? "⌕" : "✦"}</span><h3>{tasks.length ? "No tasks match these filters" : "A fresh start"}</h3><p>{tasks.length ? "Try another search or reset your filters." : "Create your first task above and start building momentum."}</p>{tasks.length > 0 && <button className="ty-secondary-button" onClick={() => { setFilter("all"); setCategoryFilter("all"); setSearch(""); setShowUpcomingOnly(false); setShowOverdueOnly(false); }}>Clear filters</button>}</div> : <div className="ty-task-list-wrap"><TaskList tasks={sortedTasks} onComplete={completeTask} onDelete={deleteTask} onUpdate={updateTask} /></div>}
+        </section>
+        <footer className="ty-footer"><span className="ty-brand-mark ty-footer-mark">✓</span><span><strong>TaskYard</strong> · Make room for what matters.</span><span className="ty-footer-right">One task at a time ✦</span></footer>
       </main>
     </div>
   );
